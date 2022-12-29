@@ -201,9 +201,27 @@ class MinesweeperAI:
 
         # Adding new knowledge
         x, y = cell
-        for i in range(x - 1, x + 2):
-            for j in range(y - 1, y + 2):
-                "TBD"
+        cells_to_add_to_sentence = set()
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                try:
+                    if i != 0 or j != 0:
+                        cells_to_add_to_sentence.add(x + i, y + j)
+                except: 
+                    pass
+        Sentence(cells_to_add_to_sentence, count)
+
+        # Deducing any new mines or safes
+        for sentence in self.knowledge: 
+            known_mines = sentence.known_mines()
+            known_safes = sentence.known_safes()
+
+        self.mines.update(known_mines)
+        self.safes.update(known_safes)
+
+        # Updating sets
+        for sentence in self.knowledge: 
+            "TBD"
 
     def make_safe_move(self):
         """
