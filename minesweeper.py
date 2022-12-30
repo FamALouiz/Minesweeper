@@ -195,44 +195,50 @@ class MinesweeperAI:
         self.safes.add(cell)
 
         # Updating any sentence with the new safe cell
-        for sentence in self.knowledge:
-            if cell in sentence:
-                sentence.mark_safe(cell)
+        if len(self.knowledge) > 1:
+            for sentence in self.knowledge:
+                if cell in sentence.cells:
+                    sentence.mark_safe(cell)
+        elif len(self.knowledge) == 1:
+            if cell in self.knowledge[0].cells:
+                self.knowledge[0].mark_safe(cell)
 
         # Adding new knowledge
         x, y = cell
         cells_to_add_to_sentence = set()
         for i in range(-1, 2):
             for j in range(-1, 2):
-                try:
+                if x + i > 0 and y + j > 0 and x + i < 8 and y + i < 8:
                     if i != 0 or j != 0:
-                        cells_to_add_to_sentence.add(x + i, y + j)
-                except:
-                    pass
-        Sentence(cells_to_add_to_sentence, count)
+                        cells_to_add_to_sentence.add((x + i, y + j))
+        self.knowledge.append(Sentence(cells_to_add_to_sentence, count))
 
         # Deducing any new mines or safes
+        known_mines = None
+        known_safes = None
+
         for sentence in self.knowledge:
             known_mines = sentence.known_mines()
             known_safes = sentence.known_safes()
 
-        self.mines.update(known_mines)
-        self.safes.update(known_safes)
+        if known_mines != None:
+            self.mines.update(known_mines)
+        if known_safes != None:
+            self.safes.update(known_safes)
 
         condensed_data = []
         data_to_be_removed = []
 
         # Updating/Condensing sets
         for i in range(len(self.knowledge)):
-            if changes == 0:
-                break
             changes = 0
             for sentence1 in self.knowledge:
                 for sentence2 in self.knowledge:
                     if sentence1 != sentence2 and sentence1.cells.issubset(
                         sentence2.cells
                     ):
-                        data_to_be_removed.append(sentence1, sentence2)
+                        data_to_be_removed.append(sentence1)
+                        data_to_be_removed.append(sentence2)
                         condensed_data.append(
                             Sentence(
                                 sentence2.cells - sentence1.cells,
@@ -240,23 +246,29 @@ class MinesweeperAI:
                             )
                         )
                         changes += 1
+            if changes == 0:
+                break
 
         for item in data_to_be_removed:
-            self.knowledge.remove(item)
+            try:
+                self.knowledge.remove(item)
+            except:
+                continue
         for item in condensed_data:
-            self.knowledge.append(item)
+            try:
+                self.knowledge.append(item)
+            except:
+                continue
 
     def make_safe_move(self):
         """
         Returns a safe cell to choose on the Minesweeper board.
-        The move must be known to be safe, and not already a move
-        that has been made.
-
-        This function may use the knowledge in self.mines, self.safes
-        and self.moves_made, but should not modify any of those values.
         """
-        return self.safes[1]
-        raise NotImplementedError
+        if len(self.safes) == 0:
+            return None
+        for move in self.safes:
+            if not move in self.moves_made:
+                return move
 
     def make_random_move(self):
         """
@@ -265,4 +277,8 @@ class MinesweeperAI:
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        raise NotImplementedError
+        for x_count in range(8):
+            for y_count in range(8):
+                cell = (x_count, y_count)
+                if not cell in self.moves_made and not cell in self.mines:
+                    return cell
