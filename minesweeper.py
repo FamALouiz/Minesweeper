@@ -1,4 +1,3 @@
-import itertools
 import random
 
 
@@ -107,6 +106,8 @@ class Sentence:
         """
         if len(self.cells) == self.count:
             return self.cells
+        else:
+            return set()
 
     def known_safes(self):
         """
@@ -114,6 +115,8 @@ class Sentence:
         """
         if self.count == 0:
             return self.cells
+        else:
+            return set()
 
     def mark_mine(self, cell):
         """
@@ -187,7 +190,6 @@ class MinesweeperAI:
             5) adds any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-
         # Marks move as made
         self.moves_made.add(cell)
 
@@ -208,57 +210,48 @@ class MinesweeperAI:
         cells_to_add_to_sentence = set()
         for i in range(-1, 2):
             for j in range(-1, 2):
-                if x + i > 0 and y + j > 0 and x + i < 8 and y + i < 8:
+                if x + i >= 0 and y + j >= 0 and x + i <= 7 and y + j <= 7:
                     if i != 0 or j != 0:
                         cells_to_add_to_sentence.add((x + i, y + j))
-        self.knowledge.append(Sentence(cells_to_add_to_sentence, count))
 
-        # Deducing any new mines or safes
-        known_mines = None
-        known_safes = None
+        new_sentence = Sentence(cells_to_add_to_sentence, count)
+        self.knowledge.append(new_sentence)
 
         for sentence in self.knowledge:
-            known_mines = sentence.known_mines()
-            known_safes = sentence.known_safes()
-
-        if known_mines != None:
-            self.mines.update(known_mines)
-        if known_safes != None:
-            self.safes.update(known_safes)
+            if len(sentence.cells) == 0:
+                self.knowledge.remove(sentence)
+            safe_cells = list(sentence.known_safes())
+            mine_cells = list(sentence.known_mines())
+            for safe in safe_cells:
+                self.mark_safe(safe)
+            for mine in mine_cells:
+                self.mark_mine(mine)
 
         condensed_data = []
         data_to_be_removed = []
 
         # Updating/Condensing sets
-        for i in range(len(self.knowledge)):
-            changes = 0
-            for sentence1 in self.knowledge:
-                for sentence2 in self.knowledge:
-                    if sentence1 != sentence2 and sentence1.cells.issubset(
-                        sentence2.cells
-                    ):
-                        data_to_be_removed.append(sentence1)
-                        data_to_be_removed.append(sentence2)
-                        condensed_data.append(
-                            Sentence(
-                                sentence2.cells - sentence1.cells,
-                                sentence2.count - sentence1.count,
-                            )
-                        )
-                        changes += 1
-            if changes == 0:
-                break
+        for sentence in self.knowledge:
+            if new_sentence.cells.issubset(sentence.cells):
+                data_to_be_removed.append(new_sentence)
+                data_to_be_removed.append(sentence)
+                condensed_data.append(
+                    Sentence(
+                        sentence.cells - new_sentence.cells,
+                        sentence.count - new_sentence.count,
+                    )
+                )
+            elif sentence.cells.issubset(new_sentence.cells):
+                data_to_be_removed.append(new_sentence)
+                data_to_be_removed.append(sentence)
+                condensed_data.append(
+                    Sentence(
+                        new_sentence.cells - sentence.cells,
+                        new_sentence.count - sentence.count,
+                    )
+                )
 
-        for item in data_to_be_removed:
-            try:
-                self.knowledge.remove(item)
-            except:
-                continue
-        for item in condensed_data:
-            try:
-                self.knowledge.append(item)
-            except:
-                continue
+        print(self.mines)
 
     def make_safe_move(self):
         """
@@ -277,8 +270,7 @@ class MinesweeperAI:
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        for x_count in range(8):
-            for y_count in range(8):
-                cell = (x_count, y_count)
-                if not cell in self.moves_made and not cell in self.mines:
-                    return cell
+        while True:
+            cell = (random.randint(0, 7), random.randint(0, 7))
+            if not cell in self.moves_made and not cell in self.mines:
+                return cell
