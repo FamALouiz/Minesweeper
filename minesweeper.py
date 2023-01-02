@@ -194,7 +194,8 @@ class MinesweeperAI:
         self.moves_made.add(cell)
 
         # Adding to safe cells
-        self.safes.add(cell)
+        if cell not in self.safes:
+            self.mark_safe(cell)
 
         # Updating any sentence with the new safe cell
         if len(self.knowledge) > 1:
@@ -211,7 +212,7 @@ class MinesweeperAI:
         for i in range(-1, 2):
             for j in range(-1, 2):
                 if x + i >= 0 and y + j >= 0 and x + i <= 7 and y + j <= 7:
-                    if i != 0 or j != 0:
+                    if i != 0 or j != 0 and not ((x + i, y + j) in self.moves_made):
                         cells_to_add_to_sentence.add((x + i, y + j))
 
         new_sentence = Sentence(cells_to_add_to_sentence, count)
@@ -232,7 +233,7 @@ class MinesweeperAI:
 
         # Updating/Condensing sets
         for sentence in self.knowledge:
-            if len(sentence.cells) == 0: 
+            if len(sentence.cells) == 0:
                 self.knowledge.remove(sentence)
             elif len(sentence.cells) == len(new_sentence.cells):
                 continue
@@ -254,32 +255,29 @@ class MinesweeperAI:
                         new_sentence.count - sentence.count,
                     )
                 )
-            else: 
+            else:
                 to_be_removed = []
-                for cell in sentence.cells: 
-                    if cell in self.moves_made: 
+                for cell in sentence.cells:
+                    if cell in self.moves_made:
                         to_be_removed.append(cell)
-                for cell in to_be_removed: 
+                for cell in to_be_removed:
                     sentence.cells.remove(cell)
 
         # Adding new conclusion to knowledge base
-        if len(data_to_be_removed) > 1: 
-            for sentence in data_to_be_removed: 
+        if len(data_to_be_removed) > 1:
+            for sentence in data_to_be_removed:
                 if sentence in self.knowledge:
                     self.knowledge.remove(sentence)
-        elif len(data_to_be_removed) == 1: 
+        elif len(data_to_be_removed) == 1:
             if sentence in self.knowledge:
                 self.knowledge.remove(data_to_be_removed[0])
-        if len(condensed_data) > 1:     
+        if len(condensed_data) > 1:
             for sentence in condensed_data:
                 if not sentence in self.knowledge:
-                    self.knowledge.append(sentence) 
-        elif len(condensed_data) == 1: 
+                    self.knowledge.append(sentence)
+        elif len(condensed_data) == 1:
             if not sentence in self.knowledge:
                 self.knowledge.append(condensed_data[0])
-
-        for sentence in self.knowledge: 
-            print(str(sentence), cell)
 
     def make_safe_move(self):
         """
@@ -300,25 +298,26 @@ class MinesweeperAI:
         """
         board = set()
 
-        for i in range(8): 
-            for j in range(8): 
-                board.add((i,j))
+        for i in range(8):
+            for j in range(8):
+                board.add((i, j))
 
-        for move in self.moves_made: 
+        for move in self.moves_made:
             board.remove(move)
-        
+
         possible_moves = []
 
-        for move in board: 
-            if not move in self.mines: 
+        for move in board:
+            if not move in self.mines:
                 possible_moves.append(move)
-        
-        for move in possible_moves: 
+
+        for move in possible_moves:
             for sentence in self.knowledge:
-                if not move in sentence.cells: 
+                if not move in sentence.cells:
                     return move
-        if len(possible_moves) != 1 and len(possible_moves) != 0: 
-            print(possible_moves)
+        if len(possible_moves) != 1 and len(possible_moves) != 0:
             return possible_moves[random.randint(0, len(possible_moves) - 1)]
-        else: 
-            return possible_moves[0]
+        elif len(possible_moves) == 0:
+            return None
+        else:
+            possible_moves[0]
