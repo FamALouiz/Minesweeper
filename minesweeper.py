@@ -254,8 +254,32 @@ class MinesweeperAI:
                         new_sentence.count - sentence.count,
                     )
                 )
+            else: 
+                to_be_removed = []
+                for cell in sentence.cells: 
+                    if cell in self.moves_made: 
+                        to_be_removed.append(cell)
+                for cell in to_be_removed: 
+                    sentence.cells.remove(cell)
 
-        print(self.mines)
+        # Adding new conclusion to knowledge base
+        if len(data_to_be_removed) > 1: 
+            for sentence in data_to_be_removed: 
+                if sentence in self.knowledge:
+                    self.knowledge.remove(sentence)
+        elif len(data_to_be_removed) == 1: 
+            if sentence in self.knowledge:
+                self.knowledge.remove(data_to_be_removed[0])
+        if len(condensed_data) > 1:     
+            for sentence in condensed_data:
+                if not sentence in self.knowledge:
+                    self.knowledge.append(sentence) 
+        elif len(condensed_data) == 1: 
+            if not sentence in self.knowledge:
+                self.knowledge.append(condensed_data[0])
+
+        for sentence in self.knowledge: 
+            print(str(sentence), cell)
 
     def make_safe_move(self):
         """
@@ -274,7 +298,27 @@ class MinesweeperAI:
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        while True:
-            cell = (random.randint(0, 7), random.randint(0, 7))
-            if not cell in self.moves_made and not cell in self.mines:
-                return cell
+        board = set()
+
+        for i in range(8): 
+            for j in range(8): 
+                board.add((i,j))
+
+        for move in self.moves_made: 
+            board.remove(move)
+        
+        possible_moves = []
+
+        for move in board: 
+            if not move in self.mines: 
+                possible_moves.append(move)
+        
+        for move in possible_moves: 
+            for sentence in self.knowledge:
+                if not move in sentence.cells: 
+                    return move
+        if len(possible_moves) != 1 and len(possible_moves) != 0: 
+            print(possible_moves)
+            return possible_moves[random.randint(0, len(possible_moves) - 1)]
+        else: 
+            return possible_moves[0]
