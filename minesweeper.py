@@ -232,7 +232,11 @@ class MinesweeperAI:
 
         # Updating/Condensing sets
         for sentence in self.knowledge:
-            if new_sentence.cells.issubset(sentence.cells):
+            if len(sentence.cells) == 0: 
+                self.knowledge.remove(sentence)
+            elif len(sentence.cells) == len(new_sentence.cells):
+                continue
+            elif new_sentence.cells.issubset(sentence.cells):
                 data_to_be_removed.append(new_sentence)
                 data_to_be_removed.append(sentence)
                 condensed_data.append(
